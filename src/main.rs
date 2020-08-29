@@ -5,7 +5,7 @@ use core::panic::PanicInfo;
 
 extern crate rlibc;
 
-static HELLO: &[u8] = b"Hello, World!";
+static HELLO: &[u8] = b"Hallo, Kat";
 
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
@@ -14,7 +14,7 @@ pub extern "C" fn _start() -> ! {
     for (i, &byte) in HELLO.iter().enumerate() {
         unsafe {
             *vga_buffer.offset(i as isize * 2) = byte;
-            *vga_buffer.offset(i as isize * 2 + 1) = 0xb;
+            *vga_buffer.offset(i as isize * 2 + 1) = 0b00101101;
         }
     }
 
