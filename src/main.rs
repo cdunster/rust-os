@@ -8,6 +8,7 @@ use core::panic::PanicInfo;
 
 extern crate rlibc;
 
+mod serial;
 mod vga_buffer;
 
 #[no_mangle]
@@ -21,6 +22,7 @@ pub extern "C" fn _start() -> ! {
     loop {}
 }
 
+#[cfg(not(test))]
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
     println!("{}", info);
@@ -43,7 +45,7 @@ pub fn exit_qemu(exit_code: QemuExitCode) {
 
 #[cfg(test)]
 fn test_runner(tests: &[&dyn Fn()]) {
-    println!("Running {} tests", tests.len());
+    serial_println!("Running {} tests", tests.len());
     for test in tests {
         test();
     }
@@ -52,7 +54,17 @@ fn test_runner(tests: &[&dyn Fn()]) {
 
 #[test_case]
 fn trivial_assertion() {
-    print!("Trivial assertion... ");
-    assert_eq!(1, 1);
-    println!("[ok]");
+    serial_print!("Trivial assertion... ");
+    assert_eq!(1, 0);
+    serial_println!("[ok]");
+}
+
+#[cfg(test)]
+#[panic_handler]
+fn panic(info: &PanicInfo) -> ! {
+    serial_println!("[failed]");
+    serial_println!("Error: {}", info);
+    exit_qemu(QemuExitCode::Failed);
+
+    loop {}
 }
