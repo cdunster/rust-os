@@ -13,11 +13,11 @@ mod vga_buffer;
 
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
-    println!("Hello, {}!", "World");
-    println!("Another line!");
-
     #[cfg(test)]
     test_main();
+
+    println!("Hello, {}!", "World");
+    println!("Another line!");
 
     loop {}
 }
