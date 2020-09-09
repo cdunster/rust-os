@@ -1,5 +1,6 @@
 #![no_std]
 #![cfg_attr(test, no_main)]
+#![feature(abi_x86_interrupt)]
 #![feature(custom_test_frameworks)]
 #![test_runner(crate::test_runner)]
 #![reexport_test_harness_main = "test_main"]
@@ -8,6 +9,7 @@ extern crate rlibc;
 
 use core::panic::PanicInfo;
 
+pub mod interrupts;
 pub mod serial;
 pub mod vga_buffer;
 
@@ -22,6 +24,10 @@ pub fn exit_qemu(exit_code: QemuExitCode) {
         let mut port = x86_64::instructions::port::Port::new(0xF4);
         port.write(exit_code as u32);
     }
+}
+
+pub fn init() {
+    interrupts::init_idt();
 }
 
 pub trait Testable {
@@ -58,6 +64,7 @@ pub fn test_panic_handler(info: &PanicInfo) -> ! {
 #[cfg(test)]
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
+    init();
     test_main();
 
     loop {}

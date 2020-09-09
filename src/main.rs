@@ -12,6 +12,7 @@ pub extern "C" fn _start() -> ! {
     #[cfg(test)]
     test_main();
 
+    rust_os::init();
     println!("Hello, {}!", "World");
     println!("Another line!");
 
