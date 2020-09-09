@@ -13,6 +13,7 @@ pub extern "C" fn _start() -> ! {
     test_main();
 
     rust_os::init();
+
     println!("Hello, {}!", "World");
     println!("Another line!");
 
