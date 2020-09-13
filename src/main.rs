@@ -17,7 +17,7 @@ pub extern "C" fn _start() -> ! {
     println!("Hello, {}!", "World");
     println!("Another line!");
 
-    loop {}
+    rust_os::hlt_loop();
 }
 
 #[cfg(not(test))]
@@ -25,7 +25,7 @@ pub extern "C" fn _start() -> ! {
 fn panic(info: &PanicInfo) -> ! {
     println!("{}", info);
 
-    loop {}
+    rust_os::hlt_loop();
 }
 
 #[cfg(test)]
