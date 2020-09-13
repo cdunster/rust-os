@@ -20,7 +20,10 @@ macro_rules! println {
 #[doc(hidden)]
 pub fn _print(args: fmt::Arguments) {
     use core::fmt::Write;
-    WRITER.lock().write_fmt(args).unwrap();
+
+    x86_64::instructions::interrupts::without_interrupts(|| {
+        WRITER.lock().write_fmt(args).unwrap();
+    });
 }
 
 #[allow(dead_code)]
@@ -155,11 +158,13 @@ fn println_not_panic_many() {
 #[test_case]
 fn println_writes_to_buffer() {
     let s = "A single line to print.";
-    println!("{}", s);
-    for (i, c) in s.chars().enumerate() {
-        let buffer_char = WRITER.lock().buffer.chars[BUFFER_HEIGHT - 2][i].read();
-        assert_eq!(char::from(buffer_char.ascii_char), c);
-    }
+    x86_64::instructions::interrupts::without_interrupts(|| {
+        println!("{}", s);
+        for (i, c) in s.chars().enumerate() {
+            let buffer_char = WRITER.lock().buffer.chars[BUFFER_HEIGHT - 2][i].read();
+            assert_eq!(char::from(buffer_char.ascii_char), c);
+        }
+    });
 }
 
 #[test_case]
@@ -167,53 +172,60 @@ fn print_can_wrap() {
     let full_line =
         "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
     assert_eq!(full_line.len(), BUFFER_WIDTH);
-    print!("{}", full_line);
-    for i in 0..BUFFER_WIDTH {
-        let buffer_char = WRITER.lock().buffer.chars[BUFFER_HEIGHT - 1][i].read();
-        assert_eq!(char::from(buffer_char.ascii_char), 'x');
-    }
+    x86_64::instructions::interrupts::without_interrupts(|| {
+        println!();
+        print!("{}", full_line);
+        for i in 0..BUFFER_WIDTH {
+            let buffer_char = WRITER.lock().buffer.chars[BUFFER_HEIGHT - 1][i].read();
+            assert_eq!(char::from(buffer_char.ascii_char), 'x');
+        }
 
-    let s = "This should wrap onto a new line!";
-    print!("{}", s);
-    for i in 0..BUFFER_WIDTH {
-        let buffer_char = WRITER.lock().buffer.chars[BUFFER_HEIGHT - 2][i].read();
-        assert_eq!(char::from(buffer_char.ascii_char), 'x');
-    }
-    for (i, c) in s.chars().enumerate() {
-        let buffer_char = WRITER.lock().buffer.chars[BUFFER_HEIGHT - 1][i].read();
-        assert_eq!(char::from(buffer_char.ascii_char), c);
-    }
+        let s = "This should wrap onto a new line!";
+        print!("{}", s);
+        for i in 0..BUFFER_WIDTH {
+            let buffer_char = WRITER.lock().buffer.chars[BUFFER_HEIGHT - 2][i].read();
+            assert_eq!(char::from(buffer_char.ascii_char), 'x');
+        }
+        for (i, c) in s.chars().enumerate() {
+            let buffer_char = WRITER.lock().buffer.chars[BUFFER_HEIGHT - 1][i].read();
+            assert_eq!(char::from(buffer_char.ascii_char), c);
+        }
+    });
 }
 
 #[test_case]
 fn can_clear_row() {
-    println!();
-    let s = "A single line to print.";
-    print!("{}", s);
-    for (i, c) in s.chars().enumerate() {
-        let buffer_char = WRITER.lock().buffer.chars[BUFFER_HEIGHT - 1][i].read();
-        assert_eq!(char::from(buffer_char.ascii_char), c);
-    }
+    x86_64::instructions::interrupts::without_interrupts(|| {
+        println!();
+        let s = "A single line to print.";
+        print!("{}", s);
+        for (i, c) in s.chars().enumerate() {
+            let buffer_char = WRITER.lock().buffer.chars[BUFFER_HEIGHT - 1][i].read();
+            assert_eq!(char::from(buffer_char.ascii_char), c);
+        }
 
-    WRITER.lock().clear_row(BUFFER_HEIGHT - 1);
+        WRITER.lock().clear_row(BUFFER_HEIGHT - 1);
 
-    for i in 0..BUFFER_WIDTH {
-        let buffer_char = WRITER.lock().buffer.chars[BUFFER_HEIGHT - 1][i].read();
-        assert_eq!(char::from(buffer_char.ascii_char), ' ');
-    }
+        for i in 0..BUFFER_WIDTH {
+            let buffer_char = WRITER.lock().buffer.chars[BUFFER_HEIGHT - 1][i].read();
+            assert_eq!(char::from(buffer_char.ascii_char), ' ');
+        }
+    });
 }
 
 #[test_case]
 fn print_with_newlines() {
-    println!();
-    let s = "Line 1\nLine 2";
-    print!("{}", s);
-    for (i, c) in "Line 1".chars().enumerate() {
-        let buffer_char = WRITER.lock().buffer.chars[BUFFER_HEIGHT - 2][i].read();
-        assert_eq!(char::from(buffer_char.ascii_char), c);
-    }
-    for (i, c) in "Line 2".chars().enumerate() {
-        let buffer_char = WRITER.lock().buffer.chars[BUFFER_HEIGHT - 1][i].read();
-        assert_eq!(char::from(buffer_char.ascii_char), c);
-    }
+    x86_64::instructions::interrupts::without_interrupts(|| {
+        println!();
+        let s = "Line 1\nLine 2";
+        print!("{}", s);
+        for (i, c) in "Line 1".chars().enumerate() {
+            let buffer_char = WRITER.lock().buffer.chars[BUFFER_HEIGHT - 2][i].read();
+            assert_eq!(char::from(buffer_char.ascii_char), c);
+        }
+        for (i, c) in "Line 2".chars().enumerate() {
+            let buffer_char = WRITER.lock().buffer.chars[BUFFER_HEIGHT - 1][i].read();
+            assert_eq!(char::from(buffer_char.ascii_char), c);
+        }
+    });
 }
